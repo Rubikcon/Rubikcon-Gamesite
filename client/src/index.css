@@ -1,0 +1,116 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Fix for slick carousel fonts */
+@font-face {
+  font-family: 'slick';
+  font-weight: normal;
+  font-style: normal;
+  src: url('data:application/x-font-ttf;charset=utf-8;base64,') format('truetype');
+}
+
+@view-transition {
+  navigation: auto;
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+}
+
+:root {
+  --background: 225 13% 7%; /* #101114 */
+  --foreground: 0 0% 98%;
+  --muted: 230 9% 12%; /* #1C1D21 */
+  --muted-foreground: 0 0% 60%;
+  --popover: 225 13% 7%;
+  --popover-foreground: 0 0% 98%;
+  --card: 230 9% 12%; /* #1C1D21 */
+  --card-foreground: 0 0% 98%;
+  --border: 225 6% 19%; /* #2D2F34 */
+  --input: 225 6% 19%;
+  --primary: 52 88% 44%; /* #D4B30D */
+  --primary-gradient-end: 60 88% 50%; /* #E3E31A */
+  --primary-foreground: 0 0% 10%;
+  --secondary: 230 9% 12%;
+  --secondary-foreground: 0 0% 98%;
+  --accent: 52 88% 44%;
+  --accent-foreground: 0 0% 10%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 60 9.1% 97.8%;
+  --ring: 52 88% 44%;
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: 225 13% 7%;
+  --foreground: 0 0% 98%;
+  --muted: 230 9% 12%;
+  --muted-foreground: 0 0% 60%;
+  --popover: 225 13% 7%;
+  --popover-foreground: 0 0% 98%;
+  --card: 230 9% 12%;
+  --card-foreground: 0 0% 98%;
+  --border: 225 6% 19%;
+  --input: 225 6% 19%;
+  --primary: 52 88% 44%;
+  --primary-gradient-end: 60 88% 50%;
+  --primary-foreground: 0 0% 10%;
+  --secondary: 230 9% 12%;
+  --secondary-foreground: 0 0% 98%;
+  --accent: 52 88% 44%;
+  --accent-foreground: 0 0% 10%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --ring: 52 88% 44%;
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    font-family: 'Onest', system-ui, -apple-system, sans-serif;
+  }
+
+  .dark body {
+    background-color: #141518;
+    background-image: radial-gradient(ellipse at center, #282a30 0%, #141518 100%);
+  }
+}
+
+@layer components {
+  .rubik-yellow {
+    @apply text-primary;
+  }
+  
+  .bg-rubik-yellow {
+    @apply bg-primary text-primary-foreground;
+  }
+  
+  .game-card {
+    @apply transition-all duration-300 hover:scale-105 hover:shadow-lg;
+  }
+  
+  .btn-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-2 rounded-lg font-semibold transition-colors;
+  }
+  
+  .btn-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border px-6 py-2 rounded-lg font-semibold transition-colors;
+  }
+}
+
+@layer utilities {
+  .text-shadow {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+}
