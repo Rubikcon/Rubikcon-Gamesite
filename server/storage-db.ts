@@ -189,27 +189,7 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async getAllOrders(): Promise<Order[]> {
-    return await db.select().from(orders).orderBy(orders.createdAt).limit(50);
-  }
 
-  async getAdminStats(): Promise<any> {
-    const totalOrders = await db.select().from(orders);
-    const paidOrders = totalOrders.filter(o => o.status === 'paid');
-    const pendingOrders = totalOrders.filter(o => o.status === 'pending');
-    const totalRevenue = paidOrders.reduce((sum, order) => sum + order.total, 0);
-    
-    return {
-      totalOrders: totalOrders.length,
-      totalRevenue,
-      pendingOrders: pendingOrders.length,
-      lowStockItems: 0
-    };
-  }
-
-  async updateGameStock(gameId: number, stock: number): Promise<void> {
-    console.log(`Would update game ${gameId} stock to ${stock}`);
-  }
 }
 
 // Use database storage in production, memory storage for development

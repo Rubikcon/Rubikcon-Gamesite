@@ -59,8 +59,6 @@ export default function GameCard({ game }: GameCardProps) {
               src={game.image}
               alt={game.title}
               className="w-full h-32 object-cover rounded-lg"
-              loading="lazy"
-              decoding="async"
             />
             {isOnline && (
               <div className="absolute top-2 right-2">

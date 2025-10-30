@@ -63,7 +63,7 @@ export class MemStorage implements IStorage {
         title: "Crypto Charades",
         slug: "crypto-charades",
         description: "How well do you REALLY know crypto lingo? Act out Bitcoin, DeFi, NFTs and more in this hilarious party game that'll have everyone guessing and laughing!",
-        price: 1200, // $12 in cents
+        price: 100, // $1 in cents
         category: "card",
         image: "/images/crypto-charade-main.png",
         images: [
@@ -84,7 +84,7 @@ Both teams take turns and keep playing until the game is over`
         title: "Blocks and Hashes",
         slug: "blocks-and-hashes",
         description: "Master the fundamentals of blockchain technology with this strategic card game that teaches you about cryptographic hashing, mining, and consensus mechanisms.",
-        price: 1200, // $12 in cents
+        price: 100, // $1 in cents
         category: "card",
         image: "/images/card3.png",
         images: [
@@ -111,7 +111,7 @@ The game continues until all cards are used, and the highest scorer wins.`
         title: "Into the Cryptoverse",
         slug: "into-the-cryptoverse",
         description: "Journey through the multiverse of cryptocurrency in this immersive card game experience that spans Bitcoin, Ethereum, and beyond.",
-        price: 1200, // $12 in cents
+        price: 100, // $1 in cents
         category: "card",
         image: " /images/card4.png",
         images: [
@@ -124,7 +124,7 @@ The game continues until all cards are used, and the highest scorer wins.`
         title: "Web3 Trivia Online",
         slug: "web3-trivia-online",
         description: "Play the ultimate Web3 trivia game online with friends from around the world. Test your knowledge and climb the leaderboards!",
-        price: 1200, // $12 in cents
+        price: 100, // $1 in cents
         category: "online",
         image: "/images/card5.png",
         images: [

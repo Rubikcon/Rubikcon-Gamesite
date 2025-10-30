@@ -5,8 +5,6 @@ import { insertCartItemSchema, insertOrderSchema } from "@shared/schema";
 import { z } from "zod";
 import FlutterwaveService from "./services/flutterwave";
 import CryptoService from "./services/crypto";
-import { EmailService } from "./services/email";
-import { InventoryService } from "./services/inventory";
 
 // Schema for crypto transaction verification
 const verifyTransactionSchema = z.object({
@@ -219,24 +217,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await storage.updatePaymentStatus(payment.id, 'successful', verification.data);
           await storage.updateOrderStatus(payment.orderId, 'paid');
           
-          // Get order details for notifications
+          // Clear cart
           const order = await storage.getOrderById(payment.orderId);
           if (order) {
-            // Clear cart
             await storage.clearCart(order.sessionId);
-            
-            // Send notifications
-            try {
-              await EmailService.sendPaymentConfirmation(order.customerInfo.email, order);
-              await EmailService.sendAdminNotification(order);
-            } catch (error) {
-              console.error('Failed to send notifications:', error);
-            }
-            
-            // Reduce inventory
-            for (const item of order.items) {
-              await InventoryService.reduceInventory(item.gameId, item.quantity);
-            }
           }
         }
         
@@ -323,24 +307,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         await storage.updateOrderStatus(cryptoTx.orderId, 'paid');
         
-        // Get order details for notifications
+        // Clear cart
         const order = await storage.getOrderById(cryptoTx.orderId);
         if (order) {
-          // Clear cart
           await storage.clearCart(order.sessionId);
-          
-          // Send notifications
-          try {
-            await EmailService.sendPaymentConfirmation(order.customerInfo.email, order);
-            await EmailService.sendAdminNotification(order);
-          } catch (error) {
-            console.error('Failed to send notifications:', error);
-          }
-          
-          // Reduce inventory
-          for (const item of order.items) {
-            await InventoryService.reduceInventory(item.gameId, item.quantity);
-          }
         }
         
         res.json({ success: true, message: 'Transaction verified successfully' });
@@ -457,24 +427,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin Routes
-  app.get('/api/admin/orders', async (req, res) => {
-    try {
-      const orders = await storage.getAllOrders();
-      res.json(orders);
-    } catch (error) {
-      res.status(500).json({ message: 'Failed to fetch orders' });
-    }
-  });
 
-  app.get('/api/admin/stats', async (req, res) => {
-    try {
-      const stats = await storage.getAdminStats();
-      res.json(stats);
-    } catch (error) {
-      res.status(500).json({ message: 'Failed to fetch stats' });
-    }
-  });
 
   // Register legacy webhook handlers
   app.post('/api/monitor-transaction', monitorTransaction);

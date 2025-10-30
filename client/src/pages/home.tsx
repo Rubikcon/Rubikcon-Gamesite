@@ -158,7 +158,7 @@ export default function Home() {
               <div className="flex-1 bg-primary p-8 overflow-hidden">
                 <Link href={featuredGame ? `/games/${featuredGame.slug}` : "/games/crypto-charades"}>
                   <div className="w-full h-full">
-                    <img src="/images/charade.png" alt="Crypto Charades Game" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                    <img src="/images/charade.png" alt="" className="w-full h-full object-cover" />
                   </div>
                 </Link>
               </div>

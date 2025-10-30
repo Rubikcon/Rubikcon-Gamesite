@@ -16,7 +16,6 @@ import Checkout from "@/pages/checkout";
 import CryptoPayment from "@/pages/crypto-payment";
 import FlutterwavePayment from "@/pages/flutterwave-payment";
 import PaymentCallback from "@/pages/payment-callback";
-import AdminDashboard from "@/pages/admin-dashboard";
 import NotFound from "@/pages/not-found";
 import WalletTest from '@/components/WalletTest';
 
@@ -32,7 +31,6 @@ function Router() {
       <Route path="/crypto-payment" component={CryptoPayment} />
       <Route path="/flutterwave-payment" component={FlutterwavePayment} />
       <Route path="/payment/callback" component={PaymentCallback} />
-      <Route path="/admin" component={AdminDashboard} />
       <Route path="/wallet-test" component={WalletTest} />
       <Route component={NotFound} />
     </Switch>
