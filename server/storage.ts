@@ -34,6 +34,9 @@ export interface IStorage {
 
   // Orders
   createOrder(order: InsertOrder): Promise<Order>;
+  getOrderById(id: number): Promise<Order | undefined>;
+  getOrdersBySession(sessionId: string): Promise<Order[]>;
+  updateOrderStatus(id: number, status: string): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -230,9 +233,26 @@ The game continues until all cards are used, and the highest scorer wins.`
       items: insertOrder.items,
       status: insertOrder.status || "pending",
       createdAt: new Date(),
+      updatedAt: new Date(),
     };
     this.orders.set(id, order);
     return order;
+  }
+
+  async getOrderById(id: number): Promise<Order | undefined> {
+    return this.orders.get(id);
+  }
+
+  async getOrdersBySession(sessionId: string): Promise<Order[]> {
+    return Array.from(this.orders.values()).filter(order => order.sessionId === sessionId);
+  }
+
+  async updateOrderStatus(id: number, status: string): Promise<void> {
+    const order = this.orders.get(id);
+    if (order) {
+      order.status = status;
+      order.updatedAt = new Date();
+    }
   }
 }
 

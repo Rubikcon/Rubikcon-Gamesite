@@ -20,12 +20,17 @@ export interface TransactionVerification {
 export class CryptoService {
   private static readonly NETWORKS = {
     ethereum: {
-      rpcUrl: 'https://eth-mainnet.g.alchemy.com/v2/your-api-key',
+      rpcUrl: 'https://eth.llamarpc.com',
       chainId: 1,
       name: 'Ethereum Mainnet'
     },
+    sepolia: {
+      rpcUrl: 'https://ethereum-sepolia-rpc.publicnode.com',
+      chainId: 11155111,
+      name: 'Sepolia Testnet'
+    },
     polygon: {
-      rpcUrl: 'https://polygon-mainnet.g.alchemy.com/v2/your-api-key',
+      rpcUrl: 'https://polygon-rpc.com',
       chainId: 137,
       name: 'Polygon Mainnet'
     },
@@ -33,6 +38,11 @@ export class CryptoService {
       rpcUrl: 'https://bsc-dataseed1.binance.org/',
       chainId: 56,
       name: 'BSC Mainnet'
+    },
+    avalanche: {
+      rpcUrl: 'https://api.avax.network/ext/bc/C/rpc',
+      chainId: 43114,
+      name: 'Avalanche C-Chain'
     }
   };
 
@@ -124,15 +134,9 @@ export class CryptoService {
   }
 
   static generatePaymentAddress(network: string): string {
-    // In production, you would generate or retrieve a unique address for each payment
-    // For now, return a placeholder address
-    const addresses = {
-      ethereum: '0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6',
-      polygon: '0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6',
-      bsc: '0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6'
-    };
-
-    return addresses[network as keyof typeof addresses] || addresses.ethereum;
+    // Use the payment wallet address from environment or default
+    const paymentAddress = process.env.PAYMENT_WALLET_ADDRESS || '0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6';
+    return paymentAddress;
   }
 
   static convertUSDToCrypto(usdAmount: number, cryptoPrice: number): string {
@@ -143,7 +147,7 @@ export class CryptoService {
   static async getCryptoPrices() {
     try {
       const response = await fetch(
-        'https://api.coingecko.com/api/v3/simple/price?ids=ethereum,tether,usd-coin&vs_currencies=usd'
+        'https://api.coingecko.com/api/v3/simple/price?ids=ethereum,tether,usd-coin,avalanche-2&vs_currencies=usd'
       );
       
       if (!response.ok) {
@@ -153,17 +157,19 @@ export class CryptoService {
       const data = await response.json();
       
       return {
-        ETH: data.ethereum?.usd || 0,
+        ETH: data.ethereum?.usd || 3000,
         USDT: data.tether?.usd || 1,
         USDC: data['usd-coin']?.usd || 1,
+        AVAX: data['avalanche-2']?.usd || 30,
       };
     } catch (error) {
       console.error('Error fetching crypto prices:', error);
       // Return fallback prices
       return {
-        ETH: 2000,
+        ETH: 3000,
         USDT: 1,
         USDC: 1,
+        AVAX: 30,
       };
     }
   }

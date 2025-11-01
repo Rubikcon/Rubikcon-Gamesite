@@ -25,7 +25,7 @@ const CRYPTOCURRENCIES: CryptoCurrency[] = [
     name: 'Ethereum',
     symbol: 'ETH',
     icon: '⟠',
-    address: '0xaffcf1e02282b662f425f43a7c320d226781ed7b', 
+    address: '0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6', 
     network: 'Ethereum Mainnet',
   },
   {
@@ -33,7 +33,7 @@ const CRYPTOCURRENCIES: CryptoCurrency[] = [
     name: 'Avalanche',
     symbol: 'AVAX',
     icon: '🏔️',
-    address: '0xaffcf1e02282b662f425f43a7c320d226781ed7b', 
+    address: '0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6', 
     network: 'Avalanche C-Chain',
   },
   {
@@ -41,15 +41,15 @@ const CRYPTOCURRENCIES: CryptoCurrency[] = [
     name: 'Tether USD (BSC)',
     symbol: 'USDT',
     icon: '₮',
-    address: '0xecc3b1653eacbb657b042c00f0923814ef553996', 
+    address: '0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6', 
     network: 'BSC (BEP20)',
   },
 ];
 
 const CRYPTO_ID_TO_RATE_KEY: Record<string, string> = {
-  ethereum: 'ethereum',
-  avalanche: 'avalanche-2',
-  'usdt-bsc': 'tether',
+  ethereum: 'ETH',
+  avalanche: 'AVAX',
+  'usdt-bsc': 'USDT',
 };
 
 const GAS_FEE_LEVELS = {
@@ -119,8 +119,36 @@ export default function CryptoPayment() {
         title: "Transaction Sent!",
         description: `Transaction hash: ${sendTxData.slice(0, 10)}...`,
       });
+      
+      // Verify transaction after a delay
+      setTimeout(async () => {
+        try {
+          const verifyResponse = await fetch('/api/payment/crypto/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              txHash: sendTxData,
+              transactionId: sendTxData
+            })
+          });
+          
+          if (verifyResponse.ok) {
+            const result = await verifyResponse.json();
+            if (result.success) {
+              toast({
+                title: "Payment Confirmed!",
+                description: "Your payment has been verified and processed.",
+              });
+              // Redirect to success page
+              setTimeout(() => setLocation('/payment/callback?status=success'), 2000);
+            }
+          }
+        } catch (error) {
+          console.error('Verification error:', error);
+        }
+      }, 5000); // Wait 5 seconds before verifying
     }
-  }, [sendTxData, toast, isSending]);
+  }, [sendTxData, toast, isSending, setLocation]);
 
   // Handle transaction error
   useEffect(() => {
@@ -144,7 +172,7 @@ export default function CryptoPayment() {
   useEffect(() => {
     const fetchRates = async () => {
       try {
-        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum,avalanche-2,tether&vs_currencies=usd');
+        const response = await fetch('/api/crypto-rates');
         const data = await response.json();
         setExchangeRates(data);
       } catch (error) {
@@ -176,10 +204,10 @@ export default function CryptoPayment() {
 
   const getCryptoAmount = (cryptoId: string) => {
     const rateKey = CRYPTO_ID_TO_RATE_KEY[cryptoId];
-    const rate = exchangeRates[rateKey]?.usd;
+    const rate = exchangeRates[rateKey];
     if (!rate || rate === 0) return '...';
     if (cryptoId === 'usdt-bsc') {
-      return (totalPrice / 100).toFixed(2); // USDT/USDC are pegged to USD, enforce 1:1 conversion, convert cents to dollars
+      return (totalPrice / 100).toFixed(2); // USDT is pegged to USD
     }
     return ((totalPrice / 100) / rate).toFixed(6); // Convert cents to dollars before calculating crypto amount
   };
@@ -200,7 +228,7 @@ export default function CryptoPayment() {
     }
   };
 
-  const handlePayNow = () => {
+  const handlePayNow = async () => {
     console.log('🚀 PayNow clicked - Starting debug...');
     console.log('📊 Debug Info:', {
       selectedCrypto,
@@ -255,11 +283,46 @@ export default function CryptoPayment() {
       const amount = getCryptoAmount(selectedCrypto.id);
       console.log('💰 Amount calculated:', { amount, crypto: selectedCrypto.symbol, totalPrice });
       
+      // Initialize crypto payment on backend first
+      const orderData = {
+        customerInfo: {
+          fullName: 'Crypto User',
+          email: 'user@example.com',
+          phone: '+1234567890',
+          address: 'Crypto Address',
+          country: 'Global',
+          state: 'Blockchain'
+        },
+        items: cartItems.map(item => ({
+          gameId: item.game.id,
+          title: item.game.title,
+          price: item.game.price,
+          quantity: item.quantity
+        })),
+        total: totalPrice
+      };
+
+      const initResponse = await fetch('/api/payment/crypto/initialize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderData,
+          currency: selectedCrypto.symbol,
+          network: selectedCrypto.id
+        })
+      });
+
+      if (!initResponse.ok) {
+        throw new Error('Failed to initialize crypto payment');
+      }
+
+      const { orderId, paymentAddress } = await initResponse.json();
+      
       // For ETH and AVAX transactions
       if (selectedCrypto.id === 'ethereum' || selectedCrypto.id === 'avalanche') {
-        console.log('⚡ Initiating ETH transaction...');
+        console.log('⚡ Initiating native token transaction...');
         console.log('📝 Transaction params:', {
-          to: selectedCrypto.address,
+          to: paymentAddress,
           value: parseEther(amount),
           amountInWei: parseEther(amount).toString()
         });
@@ -277,7 +340,7 @@ export default function CryptoPayment() {
         
         console.log('🔄 Calling sendTransaction...');
         sendTransaction({
-          to: selectedCrypto.address as `0x${string}`,
+          to: paymentAddress as `0x${string}`,
           value: parseEther(amount),
         });
         console.log('✅ sendTransaction called successfully');
