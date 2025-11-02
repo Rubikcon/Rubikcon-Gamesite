@@ -1,4 +1,4 @@
-import { games, cartItems, orders, type CartItem, type Order, type InsertCartItem, type InsertOrder } from "@shared/schema";
+import { games, cartItems, orders, cryptoTransactions, type CartItem, type Order, type CryptoTransaction, type InsertCartItem, type InsertOrder, type InsertCryptoTransaction } from "@shared/schema";
 
 // Define local interfaces to avoid conflict with imported types
 interface LocalGame {
@@ -37,23 +37,32 @@ export interface IStorage {
   getOrderById(id: number): Promise<Order | undefined>;
   getOrdersBySession(sessionId: string): Promise<Order[]>;
   updateOrderStatus(id: number, status: string): Promise<void>;
+
+  // Crypto Transactions
+  createCryptoTransaction(transaction: InsertCryptoTransaction): Promise<CryptoTransaction>;
+  updateCryptoTransaction(id: number, updates: Partial<CryptoTransaction>): Promise<void>;
+  getCryptoTransactionByHash(txHash: string): Promise<CryptoTransaction | undefined>;
 }
 
 export class MemStorage implements IStorage {
   private games: Map<number, LocalGame>;
   private cartItems: Map<string, CartItem[]>;
   private orders: Map<number, Order>;
+  private cryptoTransactions: Map<number, CryptoTransaction>;
   private currentGameId: number;
   private currentCartItemId: number;
   private currentOrderId: number;
+  private currentCryptoTxId: number;
 
   constructor() {
     this.games = new Map();
     this.cartItems = new Map();
     this.orders = new Map();
+    this.cryptoTransactions = new Map();
     this.currentGameId = 1;
     this.currentCartItemId = 1;
     this.currentOrderId = 1;
+    this.currentCryptoTxId = 1;
 
     // Initialize with sample games
     this.initializeGames();
@@ -253,6 +262,31 @@ The game continues until all cards are used, and the highest scorer wins.`
       order.status = status;
       order.updatedAt = new Date();
     }
+  }
+
+  async createCryptoTransaction(insertTransaction: InsertCryptoTransaction): Promise<CryptoTransaction> {
+    const id = this.currentCryptoTxId++;
+    const transaction: CryptoTransaction = {
+      ...insertTransaction,
+      id,
+      confirmations: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.cryptoTransactions.set(id, transaction);
+    return transaction;
+  }
+
+  async updateCryptoTransaction(id: number, updates: Partial<CryptoTransaction>): Promise<void> {
+    const transaction = this.cryptoTransactions.get(id);
+    if (transaction) {
+      Object.assign(transaction, updates);
+      transaction.updatedAt = new Date();
+    }
+  }
+
+  async getCryptoTransactionByHash(txHash: string): Promise<CryptoTransaction | undefined> {
+    return Array.from(this.cryptoTransactions.values()).find(tx => tx.txHash === txHash);
   }
 }
 

@@ -45,4 +45,4 @@ export const SUPPORTED_TOKENS = {
   }
 };
 
-export const PAYMENT_WALLET_ADDRESS = '0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6'; // Replace with your actual wallet 
+export const PAYMENT_WALLET_ADDRESS = '0x742d35Cc6634C0532925A3B8D4C9dB96C4B4d8B6'; // Payment wallet address 

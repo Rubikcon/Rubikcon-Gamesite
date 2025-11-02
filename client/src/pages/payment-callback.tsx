@@ -17,16 +17,39 @@ export default function PaymentCallback() {
     const transactionId = urlParams.get('transaction_id');
     const txRef = urlParams.get('tx_ref');
     const status = urlParams.get('status');
+    const message = urlParams.get('message');
 
+    console.log('Payment callback params:', { status, transactionId, txRef, message });
+
+    // Handle crypto payment success
+    if (status === 'success') {
+      setStatus('success');
+      setMessage('Crypto payment verified successfully!');
+      return;
+    }
+
+    // Handle Flutterwave payment success
     if (status === 'successful' && transactionId && txRef) {
       verifyPayment(transactionId, txRef);
-    } else if (status === 'cancelled') {
+      return;
+    }
+
+    // Handle failures
+    if (status === 'failed') {
+      setStatus('failed');
+      setMessage(message ? decodeURIComponent(message) : 'Payment verification failed');
+      return;
+    }
+
+    if (status === 'cancelled') {
       setStatus('failed');
       setMessage('Payment was cancelled');
-    } else {
-      setStatus('failed');
-      setMessage('Payment verification failed');
+      return;
     }
+
+    // Default to failed if no valid status
+    setStatus('failed');
+    setMessage('Invalid payment status');
   }, []);
 
   const verifyPayment = async (transactionId: string, txRef: string) => {
@@ -86,7 +109,7 @@ export default function PaymentCallback() {
               <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
               <h2 className="text-xl font-semibold mb-2">Payment Successful!</h2>
               <p className="text-muted-foreground mb-6">
-                {message}
+                {message || 'Your payment has been processed successfully.'}
               </p>
               <div className="space-y-3">
                 <Button onClick={() => setLocation('/')} className="w-full">
@@ -108,7 +131,7 @@ export default function PaymentCallback() {
             <XCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
             <h2 className="text-xl font-semibold mb-2">Payment Failed</h2>
             <p className="text-muted-foreground mb-6">
-              {message}
+              {message || 'Payment verification failed'}
             </p>
             <div className="space-y-3">
               <Button onClick={() => setLocation('/checkout')} className="w-full">

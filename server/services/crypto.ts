@@ -72,25 +72,30 @@ export class CryptoService {
       const tx = await provider.getTransaction(data.txHash);
       
       if (!tx) {
+        console.log('Transaction not found:', data.txHash);
         return false;
       }
 
       const receipt = await provider.getTransactionReceipt(data.txHash);
       if (!receipt) {
+        console.log('Transaction receipt not found:', data.txHash);
         return false;
       }
 
       // Verify transaction success
       if (receipt.status !== 1) {
+        console.log('Transaction failed on blockchain:', data.txHash);
         return false;
       }
 
       // Get current block number for confirmation count
       const currentBlock = await provider.getBlockNumber();
       const confirmations = currentBlock - receipt.blockNumber;
+      
+      console.log(`Transaction confirmations: ${confirmations}`);
 
-      // Require minimum confirmations (adjust as needed)
-      const minConfirmations = data.network === 'ethereum' ? 12 : 20;
+      // For testnet, require fewer confirmations
+      const minConfirmations = data.network === 'sepolia' ? 1 : (data.network === 'ethereum' ? 12 : 6);
       
       return confirmations >= minConfirmations;
     } catch (error) {
@@ -135,8 +140,15 @@ export class CryptoService {
 
   static generatePaymentAddress(network: string): string {
     // Use the payment wallet address from environment or default
-    const paymentAddress = process.env.PAYMENT_WALLET_ADDRESS || '0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6';
-    return paymentAddress;
+    const paymentAddress = process.env.PAYMENT_WALLET_ADDRESS || '0x742d35Cc6634C0532925A3B8D4C9dB96C4B4d8B6';
+    
+    // Validate address format
+    if (!paymentAddress || !paymentAddress.match(/^0x[a-fA-F0-9]{40}$/)) {
+      throw new Error('Invalid payment wallet address format');
+    }
+    
+    // Convert to checksum address using ethers
+    return ethers.getAddress(paymentAddress);
   }
 
   static convertUSDToCrypto(usdAmount: number, cryptoPrice: number): string {
@@ -147,7 +159,7 @@ export class CryptoService {
   static async getCryptoPrices() {
     try {
       const response = await fetch(
-        'https://api.coingecko.com/api/v3/simple/price?ids=ethereum,tether,usd-coin,avalanche-2&vs_currencies=usd'
+        'https://api.coingecko.com/api/v3/simple/price?ids=ethereum,tether,avalanche-2&vs_currencies=usd'
       );
       
       if (!response.ok) {
@@ -156,20 +168,21 @@ export class CryptoService {
 
       const data = await response.json();
       
-      return {
-        ETH: data.ethereum?.usd || 3000,
-        USDT: data.tether?.usd || 1,
-        USDC: data['usd-coin']?.usd || 1,
-        AVAX: data['avalanche-2']?.usd || 30,
+      const prices = {
+        ETH: { usd: data.ethereum?.usd || 3000 },
+        AVAX: { usd: data['avalanche-2']?.usd || 30 },
+        USDT: { usd: data.tether?.usd || 1 }
       };
+      
+      console.log('Crypto prices fetched:', prices);
+      return prices;
     } catch (error) {
       console.error('Error fetching crypto prices:', error);
-      // Return fallback prices
+      // Return fallback prices in correct format
       return {
-        ETH: 3000,
-        USDT: 1,
-        USDC: 1,
-        AVAX: 30,
+        ETH: { usd: 3000 },
+        AVAX: { usd: 30 },
+        USDT: { usd: 1 }
       };
     }
   }

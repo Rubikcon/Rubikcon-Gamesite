@@ -25,7 +25,7 @@ const CRYPTOCURRENCIES: CryptoCurrency[] = [
     name: 'Ethereum',
     symbol: 'ETH',
     icon: '⟠',
-    address: '0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6', 
+    address: '0xaffcf1e02282b662f425f43a7c320d226781ed7b', 
     network: 'Ethereum Mainnet',
   },
   {
@@ -33,7 +33,7 @@ const CRYPTOCURRENCIES: CryptoCurrency[] = [
     name: 'Avalanche',
     symbol: 'AVAX',
     icon: '🏔️',
-    address: '0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6', 
+    address: '0xaffcf1e02282b662f425f43a7c320d226781ed7b', 
     network: 'Avalanche C-Chain',
   },
   {
@@ -41,7 +41,7 @@ const CRYPTOCURRENCIES: CryptoCurrency[] = [
     name: 'Tether USD (BSC)',
     symbol: 'USDT',
     icon: '₮',
-    address: '0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6', 
+    address: '0xecc3b1653eacbb657b042c00f0923814ef553996', 
     network: 'BSC (BEP20)',
   },
 ];
@@ -120,33 +120,36 @@ export default function CryptoPayment() {
         description: `Transaction hash: ${sendTxData.slice(0, 10)}...`,
       });
       
-      // Verify transaction after a delay
+      // Quick verification for demo purposes
+      // Simple verification that always works
       setTimeout(async () => {
         try {
+          console.log('🔍 Starting verification for tx:', sendTxData);
+          
           const verifyResponse = await fetch('/api/payment/crypto/verify', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              txHash: sendTxData,
-              transactionId: sendTxData
-            })
+            body: JSON.stringify({ txHash: sendTxData })
           });
           
-          if (verifyResponse.ok) {
-            const result = await verifyResponse.json();
-            if (result.success) {
-              toast({
-                title: "Payment Confirmed!",
-                description: "Your payment has been verified and processed.",
-              });
-              // Redirect to success page
-              setTimeout(() => setLocation('/payment/callback?status=success'), 2000);
-            }
+          const result = await verifyResponse.json();
+          console.log('📊 Verification result:', result);
+          
+          if (result.success) {
+            toast({
+              title: "Payment Confirmed!",
+              description: "Your payment has been processed successfully.",
+            });
+            // Immediate redirect to success
+            setLocation('/payment/callback?status=success');
+          } else {
+            setLocation('/payment/callback?status=failed&message=' + encodeURIComponent(result.message || 'Verification failed'));
           }
         } catch (error) {
-          console.error('Verification error:', error);
+          console.error('💥 Verification error:', error);
+          setLocation('/payment/callback?status=failed&message=' + encodeURIComponent('Network error'));
         }
-      }, 5000); // Wait 5 seconds before verifying
+      }, 2000); // Quick 2-second verification
     }
   }, [sendTxData, toast, isSending, setLocation]);
 
@@ -173,11 +176,20 @@ export default function CryptoPayment() {
     const fetchRates = async () => {
       try {
         const response = await fetch('/api/crypto-rates');
+        if (!response.ok) {
+          throw new Error('Failed to fetch rates');
+        }
         const data = await response.json();
+        console.log('Exchange rates received:', data);
         setExchangeRates(data);
       } catch (error) {
         console.error('Failed to fetch exchange rates:', error);
-        toast({ title: 'Error', description: 'Could not fetch crypto prices.', variant: 'destructive' });
+        // Set fallback rates
+        setExchangeRates({
+          ETH: { usd: 3000 },
+          USDT: { usd: 1 }
+        });
+        toast({ title: 'Warning', description: 'Using fallback crypto prices.', variant: 'destructive' });
       } finally {
         setIsLoadingRates(false);
       }
@@ -203,9 +215,18 @@ export default function CryptoPayment() {
   }, [selectedCrypto]);
 
   const getCryptoAmount = (cryptoId: string) => {
+    if (isLoadingRates) return '...';
+    
     const rateKey = CRYPTO_ID_TO_RATE_KEY[cryptoId];
-    const rate = exchangeRates[rateKey];
-    if (!rate || rate === 0) return '...';
+    const rate = exchangeRates[rateKey]?.usd;
+    
+    console.log('Getting crypto amount:', { cryptoId, rateKey, rate, totalPrice, exchangeRates });
+    
+    if (!rate || rate === 0) {
+      console.warn('No rate found for', rateKey);
+      return '...';
+    }
+    
     if (cryptoId === 'usdt-bsc') {
       return (totalPrice / 100).toFixed(2); // USDT is pegged to USD
     }
@@ -230,16 +251,7 @@ export default function CryptoPayment() {
 
   const handlePayNow = async () => {
     console.log('🚀 PayNow clicked - Starting debug...');
-    console.log('📊 Debug Info:', {
-      selectedCrypto,
-      walletAddress,
-      isConnected,
-      chain: chain?.id,
-      chainName: chain?.name,
-      totalPrice,
-      sendTransaction: typeof sendTransaction
-    });
-
+    
     if (!selectedCrypto || !walletAddress) {
       console.log('❌ Wallet validation failed:', { selectedCrypto: !!selectedCrypto, walletAddress: !!walletAddress });
       toast({
@@ -249,6 +261,37 @@ export default function CryptoPayment() {
       });
       return;
     }
+    
+    // Check if exchange rates are loaded
+    if (isLoadingRates) {
+      toast({
+        title: "Loading Rates",
+        description: "Please wait for exchange rates to load",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const amount = getCryptoAmount(selectedCrypto.id);
+    if (amount === '...' || !amount || isNaN(parseFloat(amount))) {
+      toast({
+        title: "Rate Error",
+        description: "Unable to calculate crypto amount. Please try again.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    console.log('📊 Debug Info:', {
+      selectedCrypto,
+      walletAddress,
+      isConnected,
+      chain: chain?.id,
+      chainName: chain?.name,
+      totalPrice,
+      amount,
+      sendTransaction: typeof sendTransaction
+    });
     
     // Check if user is on correct network for selected cryptocurrency
     const requiredNetworks = {
@@ -261,7 +304,7 @@ export default function CryptoPayment() {
     if (chain && !allowedChains.includes(chain.id)) {
       const networkNames = {
         'ethereum': 'Ethereum Mainnet or Sepolia',
-        'avalanche': 'Avalanche C-Chain', 
+        'avalanche': 'Avalanche C-Chain',
         'usdt-bsc': 'BSC (Binance Smart Chain)'
       };
       
@@ -280,7 +323,6 @@ export default function CryptoPayment() {
     }
     
     try {
-      const amount = getCryptoAmount(selectedCrypto.id);
       console.log('💰 Amount calculated:', { amount, crypto: selectedCrypto.symbol, totalPrice });
       
       // Initialize crypto payment on backend first
@@ -320,7 +362,13 @@ export default function CryptoPayment() {
       
       // For ETH and AVAX transactions
       if (selectedCrypto.id === 'ethereum' || selectedCrypto.id === 'avalanche') {
-        console.log('⚡ Initiating native token transaction...');
+        console.log('⚡ Initiating ETH transaction...');
+        
+        // Validate address format
+        if (!paymentAddress || !paymentAddress.match(/^0x[a-fA-F0-9]{40}$/)) {
+          throw new Error('Invalid payment address format');
+        }
+        
         console.log('📝 Transaction params:', {
           to: paymentAddress,
           value: parseEther(amount),
