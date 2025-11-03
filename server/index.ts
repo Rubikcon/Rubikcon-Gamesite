@@ -45,8 +45,8 @@ async function main() {
     },
   };
 
-  // Use Redis if URL is provided, otherwise use memory store
-  if (process.env.REDIS_URL) {
+  // Use Redis if URL is provided and not empty, otherwise use memory store
+  if (process.env.REDIS_URL && process.env.REDIS_URL.trim() !== '') {
     try {
       const redisClient = createClient({
         url: process.env.REDIS_URL,
@@ -65,7 +65,7 @@ async function main() {
       log(`Redis connection failed, using memory store: ${error}`);
     }
   } else {
-    log('Using in-memory sessions (Redis URL not provided)');
+    log('Using in-memory sessions (Redis disabled or URL not provided)');
   }
 
   app.use(session(sessionConfig));
