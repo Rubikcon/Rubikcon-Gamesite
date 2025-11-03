@@ -46,6 +46,51 @@ This is a full-stack web application for Rubikcon game store, built with a moder
 - `npm run start`: Starts the production server.
 - `npm run db:push`: Pushes database schema changes using Drizzle ORM.
 
+## VPS Deployment
+
+### Quick Deploy to Hostinger VPS
+
+1. **SSH into your VPS:**
+   ```bash
+   ssh root@72.61.16.28
+   ```
+
+2. **Navigate to project directory:**
+   ```bash
+   cd /var/www/rubikcongames.xyz
+   ```
+
+3. **Run deployment script:**
+   ```bash
+   chmod +x deploy.sh
+   ./deploy.sh
+   ```
+
+### Manual Deployment Steps
+
+1. **Update code:**
+   ```bash
+   git pull origin main
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   npm install
+   cd client && npm install && npm run build && cd ..
+   ```
+
+3. **Restart application:**
+   ```bash
+   pm2 restart rubikcon-games
+   ```
+
+### Troubleshooting
+
+- **Check application logs:** `pm2 logs rubikcon-games`
+- **Check application status:** `pm2 status`
+- **Restart Nginx:** `systemctl restart nginx`
+- **Check Nginx status:** `systemctl status nginx`
+
 ## License
 
 This project is licensed under the MIT License. See the `LICENSE` file for more details.
