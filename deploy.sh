@@ -3,20 +3,34 @@
 # Deployment script for Hostinger VPS
 echo "🚀 Starting deployment to Hostinger VPS..."
 
+# Set proper permissions
+echo "🔧 Setting permissions..."
+chmod -R 755 .
+chown -R $USER:$USER .
+
 # Update code from GitHub
 echo "📥 Pulling latest code from GitHub..."
 git pull origin main
+
+# Clean npm cache and node_modules
+echo "🧹 Cleaning cache..."
+npm cache clean --force
+rm -rf node_modules client/node_modules
 
 # Install dependencies
 echo "📦 Installing dependencies..."
 npm install
 
-# Build client
+# Build client with proper permissions
 echo "🏗️ Building client..."
 cd client
 npm install
-npm run build
+chmod +x node_modules/.bin/*
+npx vite build
 cd ..
+
+# Set production permissions
+chmod -R 755 client/dist
 
 # Restart application
 echo "🔄 Restarting application..."
