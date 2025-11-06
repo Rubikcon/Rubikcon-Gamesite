@@ -11,6 +11,14 @@ export default defineConfig({
       '@shared': fileURLToPath(new URL('../shared', import.meta.url)),
     },
   },
+  build: {
+    rollupOptions: {
+      onwarn: () => {},
+    },
+  },
+  esbuild: {
+    logOverride: { 'this-is-undefined-in-esm': 'silent' }
+  },
   server: {
     port: 5173,
     proxy: {
