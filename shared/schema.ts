@@ -105,7 +105,9 @@ export const insertOrderSchema = createInsertSchema(orders, {
   createdAt: true,
 });
 
-export const insertPaymentSchema = createInsertSchema(payments).omit({
+export const insertPaymentSchema = createInsertSchema(payments, {
+  gatewayResponse: z.any().optional(),
+}).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
