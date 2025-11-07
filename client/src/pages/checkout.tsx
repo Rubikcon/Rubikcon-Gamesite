@@ -196,8 +196,7 @@ export default function Checkout() {
       
       // Redirect to Flutterwave payment page
       window.location.href = response.paymentUrl;
-    } catch (error) {
-      console.error('Flutterwave initialization failed:', error);
+    } catch {
       toast({
         title: "Payment Error",
         description: "Failed to initialize payment. Please try again.",

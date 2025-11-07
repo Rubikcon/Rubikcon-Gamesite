@@ -16,32 +16,59 @@ export default function PaymentCallback() {
     const urlParams = new URLSearchParams(window.location.search);
     const transactionId = urlParams.get('transaction_id');
     const txRef = urlParams.get('tx_ref');
-    const status = urlParams.get('status');
-    const message = urlParams.get('message');
+    const urlStatus = urlParams.get('status');
+    const urlMessage = urlParams.get('message');
 
-    console.log('Payment callback params:', { status, transactionId, txRef, message });
+    const verifyPayment = async (transactionId: string, txRef: string) => {
+      try {
+        const response = await apiRequest('POST', '/api/payment/flutterwave/verify', {
+          transaction_id: transactionId,
+          tx_ref: txRef
+        });
+
+        if (response.success) {
+          setStatus('success');
+          setMessage('Payment verified successfully!');
+          toast({
+            title: "Payment Successful",
+            description: "Your order has been confirmed.",
+          });
+        } else {
+          setStatus('failed');
+          setMessage('Payment verification failed');
+        }
+      } catch {
+        setStatus('failed');
+        setMessage('Failed to verify payment');
+        toast({
+          title: "Verification Error",
+          description: "Could not verify your payment. Please contact support.",
+          variant: "destructive",
+        });
+      }
+    };
 
     // Handle crypto payment success
-    if (status === 'success') {
+    if (urlStatus === 'success') {
       setStatus('success');
       setMessage('Crypto payment verified successfully!');
       return;
     }
 
     // Handle Flutterwave payment success
-    if (status === 'successful' && transactionId && txRef) {
+    if (urlStatus === 'successful' && transactionId && txRef) {
       verifyPayment(transactionId, txRef);
       return;
     }
 
     // Handle failures
-    if (status === 'failed') {
+    if (urlStatus === 'failed') {
       setStatus('failed');
-      setMessage(message ? decodeURIComponent(message) : 'Payment verification failed');
+      setMessage(urlMessage ? decodeURIComponent(urlMessage) : 'Payment verification failed');
       return;
     }
 
-    if (status === 'cancelled') {
+    if (urlStatus === 'cancelled') {
       setStatus('failed');
       setMessage('Payment was cancelled');
       return;
@@ -50,37 +77,9 @@ export default function PaymentCallback() {
     // Default to failed if no valid status
     setStatus('failed');
     setMessage('Invalid payment status');
-  }, []);
+  }, [toast]);
 
-  const verifyPayment = async (transactionId: string, txRef: string) => {
-    try {
-      const response = await apiRequest('POST', '/api/payment/flutterwave/verify', {
-        transaction_id: transactionId,
-        tx_ref: txRef
-      });
 
-      if (response.success) {
-        setStatus('success');
-        setMessage('Payment verified successfully!');
-        toast({
-          title: "Payment Successful",
-          description: "Your order has been confirmed.",
-        });
-      } else {
-        setStatus('failed');
-        setMessage('Payment verification failed');
-      }
-    } catch (error) {
-      console.error('Payment verification error:', error);
-      setStatus('failed');
-      setMessage('Failed to verify payment');
-      toast({
-        title: "Verification Error",
-        description: "Could not verify your payment. Please contact support.",
-        variant: "destructive",
-      });
-    }
-  };
 
   if (status === 'verifying') {
     return (
