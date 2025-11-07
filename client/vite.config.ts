@@ -15,9 +15,17 @@ export default defineConfig({
     rollupOptions: {
       onwarn: () => {},
     },
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true
+      }
+    }
   },
   esbuild: {
-    logOverride: { 'this-is-undefined-in-esm': 'silent' }
+    logOverride: { 'this-is-undefined-in-esm': 'silent' },
+    drop: ['console', 'debugger']
   },
   server: {
     port: 5173,

@@ -61,8 +61,6 @@ const GAS_FEE_LEVELS = {
 export default function CryptoPayment() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  
-  console.log('💵 CryptoPayment component loaded');
   // Get cart data from API instead of store
   const { data: cartItems = [] } = useQuery<CartItem[]>({
     queryKey: ["/api/cart"],
@@ -98,22 +96,10 @@ export default function CryptoPayment() {
   const { address: walletAddress, isConnected, chain } = useAccount();
   const { disconnect } = useDisconnect();
   const { data: sendTxData, isPending: isSending, sendTransaction, error: txError } = useSendTransaction();
-  
-  console.log('🔗 Wallet state:', {
-    isConnected,
-    walletAddress,
-    chainId: chain?.id,
-    chainName: chain?.name,
-    openConnectModal: !!openConnectModal,
-    sendTransaction: !!sendTransaction,
-    isSending
-  });
 
   // Handle transaction success
   useEffect(() => {
-    console.log('🔍 Transaction data changed:', { sendTxData, isSending });
     if (sendTxData) {
-      console.log('✅ Transaction successful:', sendTxData);
       setHash(sendTxData);
       toast({
         title: "Transaction Sent!",
@@ -121,11 +107,8 @@ export default function CryptoPayment() {
       });
       
       // Quick verification for demo purposes
-      // Simple verification that always works
-      setTimeout(async () => {
+      const verifyTransaction = async () => {
         try {
-          console.log('🔍 Starting verification for tx:', sendTxData);
-          
           const verifyResponse = await fetch('/api/payment/crypto/verify', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -133,36 +116,28 @@ export default function CryptoPayment() {
           });
           
           const result = await verifyResponse.json();
-          console.log('📊 Verification result:', result);
           
           if (result.success) {
             toast({
               title: "Payment Confirmed!",
               description: "Your payment has been processed successfully.",
             });
-            // Immediate redirect to success
             setLocation('/payment/callback?status=success');
           } else {
             setLocation('/payment/callback?status=failed&message=' + encodeURIComponent(result.message || 'Verification failed'));
           }
-        } catch (error) {
-          console.error('💥 Verification error:', error);
+        } catch {
           setLocation('/payment/callback?status=failed&message=' + encodeURIComponent('Network error'));
         }
-      }, 2000); // Quick 2-second verification
+      };
+      
+      setTimeout(verifyTransaction, 2000);
     }
-  }, [sendTxData, toast, isSending, setLocation]);
+  }, [sendTxData, toast, setLocation]);
 
   // Handle transaction error
   useEffect(() => {
-    console.log('🔍 Transaction error changed:', { txError });
     if (txError) {
-      console.error('❌ Transaction failed:', txError);
-      console.error('Error details:', {
-        message: txError.message,
-        cause: txError.cause,
-        code: txError.code
-      });
       toast({
         title: "Transaction Failed",
         description: txError.message || "Transaction was rejected",
@@ -180,10 +155,8 @@ export default function CryptoPayment() {
           throw new Error('Failed to fetch rates');
         }
         const data = await response.json();
-        console.log('Exchange rates received:', data);
         setExchangeRates(data);
-      } catch (error) {
-        console.error('Failed to fetch exchange rates:', error);
+      } catch {
         // Set fallback rates
         setExchangeRates({
           ETH: { usd: 3000 },
@@ -220,10 +193,7 @@ export default function CryptoPayment() {
     const rateKey = CRYPTO_ID_TO_RATE_KEY[cryptoId];
     const rate = exchangeRates[rateKey]?.usd;
     
-    console.log('Getting crypto amount:', { cryptoId, rateKey, rate, totalPrice, exchangeRates });
-    
     if (!rate || rate === 0) {
-      console.warn('No rate found for', rateKey);
       return '...';
     }
     
@@ -234,13 +204,9 @@ export default function CryptoPayment() {
   };
 
   const handleConnectWallet = () => {
-    console.log('🔗 Connect wallet clicked');
-    console.log('OpenConnectModal available:', !!openConnectModal);
     if (openConnectModal) {
-      console.log('🔄 Opening connect modal...');
       openConnectModal();
     } else {
-      console.log('❌ OpenConnectModal not available');
       toast({
         title: "Connection Error",
         description: "Wallet connection not available",
@@ -250,10 +216,7 @@ export default function CryptoPayment() {
   };
 
   const handlePayNow = async () => {
-    console.log('🚀 PayNow clicked - Starting debug...');
-    
     if (!selectedCrypto || !walletAddress) {
-      console.log('❌ Wallet validation failed:', { selectedCrypto: !!selectedCrypto, walletAddress: !!walletAddress });
       toast({
         title: "Wallet Not Connected",
         description: "Please connect your wallet first",
@@ -282,16 +245,7 @@ export default function CryptoPayment() {
       return;
     }
     
-    console.log('📊 Debug Info:', {
-      selectedCrypto,
-      walletAddress,
-      isConnected,
-      chain: chain?.id,
-      chainName: chain?.name,
-      totalPrice,
-      amount,
-      sendTransaction: typeof sendTransaction
-    });
+
     
     // Check if user is on correct network for selected cryptocurrency
     const requiredNetworks = {
@@ -308,11 +262,7 @@ export default function CryptoPayment() {
         'usdt-bsc': 'BSC (Binance Smart Chain)'
       };
       
-      console.log('❌ Wrong network for selected crypto:', { 
-        selectedCrypto: selectedCrypto.id,
-        currentChain: chain.id, 
-        requiredChains: allowedChains 
-      });
+
       
       toast({
         title: "Wrong Network",
@@ -323,7 +273,6 @@ export default function CryptoPayment() {
     }
     
     try {
-      console.log('💰 Amount calculated:', { amount, crypto: selectedCrypto.symbol, totalPrice });
       
       // Initialize crypto payment on backend first
       const orderData = {
@@ -362,22 +311,13 @@ export default function CryptoPayment() {
       
       // For ETH and AVAX transactions
       if (selectedCrypto.id === 'ethereum' || selectedCrypto.id === 'avalanche') {
-        console.log('⚡ Initiating ETH transaction...');
-        
         // Validate address format
         if (!paymentAddress || !paymentAddress.match(/^0x[a-fA-F0-9]{40}$/)) {
           throw new Error('Invalid payment address format');
         }
         
-        console.log('📝 Transaction params:', {
-          to: paymentAddress,
-          value: parseEther(amount),
-          amountInWei: parseEther(amount).toString()
-        });
-        
         // Check if sendTransaction is available
         if (!sendTransaction) {
-          console.log('❌ sendTransaction not available');
           toast({
             title: "Wallet Error",
             description: "Transaction function not available. Try reconnecting wallet.",
@@ -386,26 +326,17 @@ export default function CryptoPayment() {
           return;
         }
         
-        console.log('🔄 Calling sendTransaction...');
         sendTransaction({
           to: paymentAddress as `0x${string}`,
           value: parseEther(amount),
         });
-        console.log('✅ sendTransaction called successfully');
       } else {
-        console.log('🪙 Token payment selected:', selectedCrypto.symbol);
         toast({
           title: "Token Payment",
           description: `Please send ${amount} ${selectedCrypto.symbol} to the address manually`,
         });
       }
-    } catch (error) {
-      console.error('💥 Transaction error:', error);
-      console.error('Error details:', {
-        message: error.message,
-        stack: error.stack,
-        name: error.name
-      });
+    } catch (error: any) {
       toast({
         title: "Transaction Error", 
         description: `Failed to initiate transaction: ${error.message}`,

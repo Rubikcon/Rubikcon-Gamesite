@@ -72,34 +72,28 @@ export class CryptoService {
       const tx = await provider.getTransaction(data.txHash);
       
       if (!tx) {
-        console.log('Transaction not found:', data.txHash);
         return false;
       }
 
       const receipt = await provider.getTransactionReceipt(data.txHash);
       if (!receipt) {
-        console.log('Transaction receipt not found:', data.txHash);
         return false;
       }
 
       // Verify transaction success
       if (receipt.status !== 1) {
-        console.log('Transaction failed on blockchain:', data.txHash);
         return false;
       }
 
       // Get current block number for confirmation count
       const currentBlock = await provider.getBlockNumber();
       const confirmations = currentBlock - receipt.blockNumber;
-      
-      console.log(`Transaction confirmations: ${confirmations}`);
 
       // For testnet, require fewer confirmations
       const minConfirmations = data.network === 'sepolia' ? 1 : (data.network === 'ethereum' ? 12 : 6);
       
       return confirmations >= minConfirmations;
-    } catch (error) {
-      console.error('Transaction verification error:', error);
+    } catch {
       return false;
     }
   }
@@ -132,8 +126,7 @@ export class CryptoService {
         confirmations,
         blockNumber: receipt.blockNumber,
       };
-    } catch (error) {
-      console.error('Error getting transaction details:', error);
+    } catch {
       return null;
     }
   }
@@ -174,10 +167,8 @@ export class CryptoService {
         USDT: { usd: data.tether?.usd || 1 }
       };
       
-      console.log('Crypto prices fetched:', prices);
       return prices;
-    } catch (error) {
-      console.error('Error fetching crypto prices:', error);
+    } catch {
       // Return fallback prices in correct format
       return {
         ETH: { usd: 3000 },
