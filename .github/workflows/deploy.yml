@@ -20,18 +20,17 @@ jobs:
         with:
           node-version: '20'
 
-      # Step 3: Copy SSH key
-      - name: Copy SSH key
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
+      # Step 3: Load SSH key using ssh-agent
+      - name: Start SSH agent
+        uses: webfactory/ssh-agent@v0.8.1
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
 
       # Step 4: Test SSH connection
       - name: Test SSH connection
-        run: ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no root@${{ secrets.VPS_HOST }} "echo 'Connected to VPS ✅'"
+        run: ssh -o StrictHostKeyChecking=no root@${{ secrets.VPS_HOST }} "echo 'Connected to VPS ✅'"
 
-      # Step 5: Deploy to VPS
+      # Step 5: Deploy backend + frontend
       - name: Deploy to VPS
         run: |
           ssh -o StrictHostKeyChecking=no root@${{ secrets.VPS_HOST }} << 'EOF'
@@ -54,8 +53,7 @@ jobs:
             npm install
             npm run build
 
-            # --- Copy frontend to Nginx domain folder ---
-            cp -r dist/* /var/www/rubikcongames.xyz/
+            # --- Copy frontend build to Nginx domain folder using rsync ---
+            rsync -avz --delete dist/ /var/www/rubikcongames.xyz/
           EOF
-
 
