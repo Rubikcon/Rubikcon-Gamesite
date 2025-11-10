@@ -57,3 +57,4 @@ jobs:
             rsync -avz --delete dist/ /var/www/rubikcongames.xyz/
           EOF
 
+
