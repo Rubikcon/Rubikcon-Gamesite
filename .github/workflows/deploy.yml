@@ -10,42 +10,52 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Step 1: Checkout code
       - name: Checkout code
         uses: actions/checkout@v3
 
+      # Step 2: Setup Node
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
           node-version: '20'
 
+      # Step 3: Copy SSH key
       - name: Copy SSH key
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
 
+      # Step 4: Test SSH connection
       - name: Test SSH connection
         run: ssh -o StrictHostKeyChecking=no root@${{ secrets.VPS_HOST }} "echo 'Connected to VPS ✅'"
 
+      # Step 5: Deploy to VPS
       - name: Deploy to VPS
         run: |
           ssh -o StrictHostKeyChecking=no root@${{ secrets.VPS_HOST }} << 'EOF'
-            cd /var/www/rubikcon-games || mkdir -p /var/www/rubikcon-games && cd /var/www/rubikcon-games
+            # Navigate to repo folder
+            cd /var/www/Rubikcon-Gamesite || mkdir -p /var/www/Rubikcon-Gamesite && cd /var/www/Rubikcon-Gamesite
 
+            # Reset and pull latest code
             git reset --hard
             git clean -fd
             git pull origin main
 
-            # Backend setup
+            # --- Backend setup ---
             cd server
             npm install
             npm run build
             pm2 restart server || pm2 start dist/index.js --name server
 
-            # Frontend setup (if exists)
-            cd ../frontend
+            # --- Frontend setup ---
+            cd ../client
             npm install
             npm run build
 
+            # --- Copy frontend to Nginx domain folder ---
+            cp -r dist/* /var/www/rubikcongames.xyz/
           EOF
+
 
