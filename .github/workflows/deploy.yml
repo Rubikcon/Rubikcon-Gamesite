@@ -34,7 +34,7 @@ jobs:
       - name: Deploy to VPS
         run: |
           ssh -o StrictHostKeyChecking=no root@${{ secrets.VPS_HOST }} << 'EOF'
-            # Navigate to repo folder
+            ## Navigate to repo folder
             cd /var/www/Rubikcon-Gamesite || mkdir -p /var/www/Rubikcon-Gamesite && cd /var/www/Rubikcon-Gamesite
 
             # Reset and pull latest code
