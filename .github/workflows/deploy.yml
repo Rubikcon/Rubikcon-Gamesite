@@ -22,7 +22,7 @@ jobs:
 
       # Step 3: Load SSH key using ssh-agent
       - name: Start SSH agent
-        uses: webfactory/ssh-agent@v0.8.1
+        uses: webfactory/ssh-agent@v0.9.1
         with:
           ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
 
