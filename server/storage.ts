@@ -1,4 +1,4 @@
-import { games, cartItems, orders, cryptoTransactions, type CartItem, type Order, type CryptoTransaction, type InsertCartItem, type InsertOrder, type InsertCryptoTransaction } from "@shared/schema";
+import { games, cartItems, orders, cryptoTransactions, type CartItem, type Order, type CryptoTransaction, type InsertCartItem, type InsertOrder, type InsertCryptoTransaction } from "../shared/schema.js";
 
 // Define local interfaces to avoid conflict with imported types
 interface LocalGame {
