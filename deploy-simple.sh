@@ -3,9 +3,9 @@
 # Simple deployment script for permission issues
 echo "🔧 Fixing permissions and deploying..."
 
-# Fix permissions
-sudo chown -R $USER:$USER /var/www/rubikcongames.xyz
-chmod -R 755 /var/www/rubikcongames.xyz
+# Fix directory permissions (ensure current user owns project folder)
+sudo chown -R $USER:$USER /var/www/Rubikcon-Gamesite
+chmod -R 755 /var/www/Rubikcon-Gamesite
 
 # Pull latest code
 git pull origin main
@@ -19,6 +19,9 @@ npm cache clean --force
 # Install dependencies
 echo "📦 Installing server dependencies..."
 npm install
+
+# 🔧 Fix esbuild execution permissions
+chmod +x node_modules/@esbuild/linux-x64/bin/esbuild || true
 
 # Build and install client
 echo "🏗️ Building client..."
@@ -35,6 +38,7 @@ echo "🔨 Building server..."
 npm run build
 
 # Restart PM2
-pm2 restart rubikcon-games
+pm2 restart rubikcon-games || pm2 start dist/index.js --name rubikcon-games
 
-echo "✅ Deployment complete!"
+echo "✅ Deployment completed successfully!"
+
