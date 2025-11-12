@@ -1,0 +1,79 @@
+name: Deploy Node + React to VPS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Setup Node
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      # Step 3: Load SSH key using ssh-agent
+      - name: Start SSH agent
+        uses: webfactory/ssh-agent@v0.9.1
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+
+      # Step 4: Test SSH connection
+      - name: Test SSH connection
+        run: ssh -o StrictHostKeyChecking=no root@${{ secrets.VPS_HOST }} "echo 'Connected to VPS ✅'"
+
+      # Step 5: Deploy backend + frontend
+      - name: Deploy to VPS
+        run: |
+          ssh -o StrictHostKeyChecking=no root@${{ secrets.VPS_HOST }} << 'EOF'
+            set -e
+            echo "Navigating to project folder..."
+            cd /var/www/Rubikcon-Gamesite || mkdir -p /var/www/Rubikcon-Gamesite && cd /var/www/Rubikcon-Gamesite
+
+            echo "Resetting and pulling latest code..."
+            git reset --hard
+            git clean -fd
+            git pull origin main
+
+            # --- Backend setup ---
+            echo "Installing backend dependencies..."
+            cd server
+            npm install
+            echo "Building backend..."
+            npm run build || { echo 'Backend build failed'; exit 1; }
+            echo "Restarting PM2 backend..."
+            pm2 restart server || pm2 start dist/index.js --name server
+
+            # --- Frontend setup ---
+            echo "Installing frontend dependencies..."
+            cd ../client
+            npm install
+
+            # Fix permissions for Vite & esbuild
+            chmod +x ../node_modules/.bin/vite ../node_modules/vite/node_modules/.bin/esbuild || true
+
+            echo "Building frontend..."
+            if npm run build; then
+              echo "Frontend build completed successfully."
+            else
+              echo "Warning: Frontend build failed. Skipping deploy to Nginx."
+              exit 0
+            fi
+
+            # --- Copy frontend build to Nginx domain folder ---
+            if [ -d dist ]; then
+              echo "Deploying frontend to Nginx folder..."
+              rsync -avz --delete dist/ /var/www/rubikcongames.xyz/
+            else
+              echo "Warning: dist folder does not exist. Skipping rsync."
+            fi
+          EOF
+

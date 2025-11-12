@@ -1,10 +1,11 @@
 import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage-db";
-import { insertCartItemSchema, insertOrderSchema } from "@shared/schema";
+import { storage } from "./storage-db.js";
+import { insertCartItemSchema, insertOrderSchema } from "../shared/schema.js";
+// import { insertCartItemSchema, insertOrderSchema } from "@shared/schema";
 import { z } from "zod";
-import FlutterwaveService from "./services/flutterwave";
-import CryptoService from "./services/crypto";
+import FlutterwaveService from "./services/flutterwave.js";
+import CryptoService from "./services/crypto.js";
 
 // Schema for crypto transaction verification
 const verifyTransactionSchema = z.object({
@@ -22,7 +23,7 @@ declare module 'express-session' {
 }
 
 // Import webhook handlers for transaction confirmation
-import { handleTransactionWebhook, monitorTransaction } from './webhooks';
+import { handleTransactionWebhook, monitorTransaction } from './webhooks.js';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Generate session ID if not exists
