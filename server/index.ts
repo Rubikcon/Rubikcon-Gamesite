@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import express, { type Request, Response, NextFunction } from "express";
+import cors from "cors";
 import session from "express-session";
 import { createClient } from "redis";
 import { RedisStore } from "connect-redis";
@@ -19,6 +20,22 @@ declare global {
 
 async function main() {
   const app = express();
+  
+  // CORS configuration for production
+  const corsOptions = {
+    origin: [
+      'http://localhost:5173',
+      'http://localhost:3000', 
+      'https://rubikcongames.xyz',
+      'http://rubikcongames.xyz'
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  };
+  
+  app.use(cors(corsOptions));
+  
   app.use(express.json({ 
     verify: (req: Request, res, buf) => {
       // We only need the raw body for the webhook route
@@ -119,9 +136,11 @@ async function main() {
     serveStatic(app);
   }
 
-  const port = process.env.PORT || 5000;
-  server.listen(port, () => {
-    log(`serving on port ${port}`);
+  const port = parseInt(process.env.PORT || '5000', 10);
+  server.listen(port, '0.0.0.0', () => {
+    log(`🚀 Server running on port ${port}`);
+    log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
+    log(`🔗 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
   });
 }
 

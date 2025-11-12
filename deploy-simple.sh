@@ -16,15 +16,23 @@ export NODE_ENV=production
 # Clean npm cache
 npm cache clean --force
 
-# Install and build
+# Install dependencies
+echo "📦 Installing server dependencies..."
 npm install
+
+# Build and install client
+echo "🏗️ Building client..."
 cd client
 npm install
 # Copy production env file
-cp ../.env.production .env.production
+cp ../.env.production .env.production 2>/dev/null || echo "No .env.production found, using .env"
 # Build with production settings
 NODE_ENV=production npm run build
 cd ..
+
+# Build server
+echo "🔨 Building server..."
+npm run build
 
 # Restart PM2
 pm2 restart rubikcon-games
