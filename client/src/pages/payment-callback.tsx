@@ -25,8 +25,8 @@ export default function PaymentCallback() {
           transaction_id: transactionId,
           tx_ref: txRef
         });
-
-        if (response.success) {
+const res =  response as any
+        if (res.success) {
           setStatus('success');
           setMessage('Payment verified successfully!');
           toast({

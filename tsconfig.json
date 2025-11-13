@@ -23,10 +23,11 @@
     }
   },
   "include": [
-    "client/src",
+
     "server",
     "shared",
-    "types.d.ts"
+    "types.d.ts",
+    "vite-env.d.ts"
   ],
   "exclude": [
     "node_modules",

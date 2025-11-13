@@ -1,6 +1,6 @@
 import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage-db.js";
+import { DatabaseStorage, storage } from "./storage-db.js";
 import { insertCartItemSchema, insertOrderSchema } from "../shared/schema.js";
 // import { insertCartItemSchema, insertOrderSchema } from "@shared/schema";
 import { z } from "zod";
@@ -101,7 +101,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(cartItem);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid cart item data", errors: error.errors });
+        return res.status(400).json({ message: "Invalid cart item data", errors: error.issues });
       }
       res.status(500).json({ message: "Failed to add item to cart" });
     }
@@ -176,16 +176,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const response = await FlutterwaveService.initializePayment(paymentData);
       
       // Create payment record
-      await storage.createPayment({
-        orderId: order.id,
-        paymentMethod: 'flutterwave',
-        amount: orderData.total,
-        currency: 'NGN',
-        reference: tx_ref,
-        status: 'pending'
-      });
-
-      console.log('Payment response:', response);
+      if (storage instanceof DatabaseStorage) {
+  
+        await storage.createPayment({
+          orderId: order.id,
+          paymentMethod: 'flutterwave',
+          amount: orderData.total,
+          currency: 'NGN',
+          reference: tx_ref,
+          status: 'pending'
+        });
+  
+        console.log('Payment response:', response);
+      }
       
       res.json({
         orderId: order.id,
@@ -207,15 +210,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (verification.status === 'success' && verification.data.status === 'successful') {
         // Update payment status
-        const payment = await storage.getPaymentByReference(tx_ref);
-        if (payment) {
-          await storage.updatePaymentStatus(payment.id, 'successful', verification.data);
-          await storage.updateOrderStatus(payment.orderId, 'paid');
-          
-          // Clear cart
-          const order = await storage.getOrderById(payment.orderId);
-          if (order) {
-            await storage.clearCart(order.sessionId);
+        if (storage instanceof DatabaseStorage) {
+      
+          const payment = await storage.getPaymentByReference(tx_ref);
+          if (payment) {
+            await storage.updatePaymentStatus(payment.id, 'successful', verification.data);
+            await storage.updateOrderStatus(payment.orderId, 'paid');
+            
+            // Clear cart
+            const order = await storage.getOrderById(payment.orderId);
+            if (order) {
+              await storage.clearCart(order.sessionId);
+            }
           }
         }
         
@@ -249,7 +255,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const prices = await CryptoService.getCryptoPrices();
       const usdAmount = orderData.total / 100; // Convert cents to USD
       const cryptoPrice = prices[currency as keyof typeof prices] || 1;
-      const cryptoAmount = CryptoService.convertUSDToCrypto(usdAmount, cryptoPrice);
+      const cryptoAmount = CryptoService.convertUSDToCrypto(usdAmount, cryptoPrice as number);
       
       // Generate payment address
       const paymentAddress = CryptoService.generatePaymentAddress(network);
@@ -343,7 +349,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(order);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid order data", errors: error.errors });
+        return res.status(400).json({ message: "Invalid order data", errors: error.issues });
       }
       res.status(500).json({ message: "Failed to create order" });
     }
@@ -387,7 +393,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         return res.status(400).json({
           verified: false,
-          error: error.errors[0]?.message || "Invalid request"
+          error: error.issues[0]?.message || "Invalid request"
         });
       }
       return res.status(500).json({
@@ -411,14 +417,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (result) {
         // Update payment and order status
-        const payment = await storage.getPaymentByReference(result.reference);
-        if (payment) {
-          await storage.updatePaymentStatus(payment.id, result.status, req.body);
-          
-          if (result.status === 'successful') {
-            await storage.updateOrderStatus(payment.orderId, 'paid');
-          } else if (result.status === 'failed') {
-            await storage.updateOrderStatus(payment.orderId, 'failed');
+        if (storage instanceof DatabaseStorage) {
+        
+          const payment = await storage.getPaymentByReference(result.reference);
+          if (payment) {
+            await storage.updatePaymentStatus(payment.id, result.status, req.body);
+            
+            if (result.status === 'successful') {
+              await storage.updateOrderStatus(payment.orderId, 'paid');
+            } else if (result.status === 'failed') {
+              await storage.updateOrderStatus(payment.orderId, 'failed');
+            }
           }
         }
       }

@@ -201,6 +201,8 @@ The game continues until all cards are used, and the highest scorer wins.`
     } else {
       const newItem: CartItem = {
         ...insertItem,
+        gameId: 0,
+        sessionId:"",
         id: this.currentCartItemId++,
         quantity: insertItem.quantity || 1,
         createdAt: new Date(),
@@ -234,7 +236,7 @@ The game continues until all cards are used, and the highest scorer wins.`
     this.cartItems.delete(sessionId);
   }
 
-  async createOrder(insertOrder: InsertOrder): Promise<Order> {
+  async createOrder(insertOrder: any): Promise<Order> {
     const id = this.currentOrderId++;
     const order: Order = {
       ...insertOrder,
@@ -264,7 +266,7 @@ The game continues until all cards are used, and the highest scorer wins.`
     }
   }
 
-  async createCryptoTransaction(insertTransaction: InsertCryptoTransaction): Promise<CryptoTransaction> {
+  async createCryptoTransaction(insertTransaction: any): Promise<CryptoTransaction> {
     const id = this.currentCryptoTxId++;
     const transaction: CryptoTransaction = {
       ...insertTransaction,

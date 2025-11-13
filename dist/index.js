@@ -164,6 +164,8 @@ The game continues until all cards are used, and the highest scorer wins.`
         } else {
           const newItem = {
             ...insertItem,
+            gameId: 0,
+            sessionId: "",
             id: this.currentCartItemId++,
             quantity: insertItem.quantity || 1,
             createdAt: /* @__PURE__ */ new Date()
@@ -248,6 +250,7 @@ The game continues until all cards are used, and the highest scorer wins.`
 // server/index.ts
 import dotenv from "dotenv";
 import express2 from "express";
+import cors from "cors";
 import session from "express-session";
 import { createClient } from "redis";
 import { RedisStore } from "connect-redis";
@@ -346,11 +349,17 @@ var cryptoTransactions = pgTable("crypto_transactions", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow()
 });
-var insertGameSchema = createInsertSchema(games, {
-  images: z.array(z.string())
-}).omit({
-  id: true,
-  createdAt: true
+var insertGameSchema = createInsertSchema(games).pick({
+  title: true,
+  slug: true,
+  description: true,
+  price: true,
+  category: true,
+  image: true,
+  isOnline: true
+}).extend({
+  images: z.array(z.string().url()).optional()
+  // add images manually
 });
 var insertCartItemSchema = createInsertSchema(cartItems).omit({
   id: true,
@@ -362,16 +371,13 @@ var orderItemSchema = z.object({
   price: z.number(),
   quantity: z.number()
 });
-var insertOrderSchema = createInsertSchema(orders, {
-  items: z.array(orderItemSchema)
-}).omit({
-  id: true,
-  createdAt: true
+var insertOrderSchema = createInsertSchema(orders).omit({ id: true, createdAt: true }).extend({
+  items: z.lazy(() => z.array(orderItemSchema))
+  // <- wrap in lazy
 });
-var insertPaymentSchema = createInsertSchema(payments).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true
+var insertPaymentSchema = createInsertSchema(payments).omit({ id: true, createdAt: true, updatedAt: true }).extend({
+  gatewayResponse: z.any().optional()
+  // override or relax type
 });
 var insertCryptoTransactionSchema = createInsertSchema(cryptoTransactions).omit({
   id: true,
@@ -623,25 +629,20 @@ var CryptoService = class {
       const provider = new ethers.JsonRpcProvider(network.rpcUrl);
       const tx = await provider.getTransaction(data.txHash);
       if (!tx) {
-        console.log("Transaction not found:", data.txHash);
         return false;
       }
       const receipt = await provider.getTransactionReceipt(data.txHash);
       if (!receipt) {
-        console.log("Transaction receipt not found:", data.txHash);
         return false;
       }
       if (receipt.status !== 1) {
-        console.log("Transaction failed on blockchain:", data.txHash);
         return false;
       }
       const currentBlock = await provider.getBlockNumber();
       const confirmations = currentBlock - receipt.blockNumber;
-      console.log(`Transaction confirmations: ${confirmations}`);
       const minConfirmations = data.network === "sepolia" ? 1 : data.network === "ethereum" ? 12 : 6;
       return confirmations >= minConfirmations;
-    } catch (error) {
-      console.error("Transaction verification error:", error);
+    } catch {
       return false;
     }
   }
@@ -669,8 +670,7 @@ var CryptoService = class {
         confirmations,
         blockNumber: receipt.blockNumber
       };
-    } catch (error) {
-      console.error("Error getting transaction details:", error);
+    } catch {
       return null;
     }
   }
@@ -699,10 +699,8 @@ var CryptoService = class {
         AVAX: { usd: data["avalanche-2"]?.usd || 30 },
         USDT: { usd: data.tether?.usd || 1 }
       };
-      console.log("Crypto prices fetched:", prices);
       return prices;
-    } catch (error) {
-      console.error("Error fetching crypto prices:", error);
+    } catch {
       return {
         ETH: { usd: 3e3 },
         AVAX: { usd: 30 },
@@ -965,7 +963,7 @@ async function registerRoutes(app) {
       res.json(cartItem);
     } catch (error) {
       if (error instanceof z2.ZodError) {
-        return res.status(400).json({ message: "Invalid cart item data", errors: error.errors });
+        return res.status(400).json({ message: "Invalid cart item data", errors: error.issues });
       }
       res.status(500).json({ message: "Failed to add item to cart" });
     }
@@ -1023,15 +1021,17 @@ async function registerRoutes(app) {
         }
       };
       const response = await flutterwave_default.initializePayment(paymentData);
-      await storage2.createPayment({
-        orderId: order.id,
-        paymentMethod: "flutterwave",
-        amount: orderData.total,
-        currency: "NGN",
-        reference: tx_ref,
-        status: "pending"
-      });
-      console.log("Payment response:", response);
+      if (storage2 instanceof DatabaseStorage) {
+        await storage2.createPayment({
+          orderId: order.id,
+          paymentMethod: "flutterwave",
+          amount: orderData.total,
+          currency: "NGN",
+          reference: tx_ref,
+          status: "pending"
+        });
+        console.log("Payment response:", response);
+      }
       res.json({
         orderId: order.id,
         paymentUrl: response.data?.link || response.link,
@@ -1047,13 +1047,15 @@ async function registerRoutes(app) {
       const { transaction_id, tx_ref } = req.body;
       const verification = await flutterwave_default.verifyPayment(transaction_id);
       if (verification.status === "success" && verification.data.status === "successful") {
-        const payment = await storage2.getPaymentByReference(tx_ref);
-        if (payment) {
-          await storage2.updatePaymentStatus(payment.id, "successful", verification.data);
-          await storage2.updateOrderStatus(payment.orderId, "paid");
-          const order = await storage2.getOrderById(payment.orderId);
-          if (order) {
-            await storage2.clearCart(order.sessionId);
+        if (storage2 instanceof DatabaseStorage) {
+          const payment = await storage2.getPaymentByReference(tx_ref);
+          if (payment) {
+            await storage2.updatePaymentStatus(payment.id, "successful", verification.data);
+            await storage2.updateOrderStatus(payment.orderId, "paid");
+            const order = await storage2.getOrderById(payment.orderId);
+            if (order) {
+              await storage2.clearCart(order.sessionId);
+            }
           }
         }
         res.json({ success: true, message: "Payment verified successfully" });
@@ -1150,7 +1152,7 @@ async function registerRoutes(app) {
       res.json(order);
     } catch (error) {
       if (error instanceof z2.ZodError) {
-        return res.status(400).json({ message: "Invalid order data", errors: error.errors });
+        return res.status(400).json({ message: "Invalid order data", errors: error.issues });
       }
       res.status(500).json({ message: "Failed to create order" });
     }
@@ -1179,7 +1181,7 @@ async function registerRoutes(app) {
       if (error instanceof z2.ZodError) {
         return res.status(400).json({
           verified: false,
-          error: error.errors[0]?.message || "Invalid request"
+          error: error.issues[0]?.message || "Invalid request"
         });
       }
       return res.status(500).json({
@@ -1197,13 +1199,15 @@ async function registerRoutes(app) {
       }
       const result = await flutterwave_default.handleWebhook(req.body);
       if (result) {
-        const payment = await storage2.getPaymentByReference(result.reference);
-        if (payment) {
-          await storage2.updatePaymentStatus(payment.id, result.status, req.body);
-          if (result.status === "successful") {
-            await storage2.updateOrderStatus(payment.orderId, "paid");
-          } else if (result.status === "failed") {
-            await storage2.updateOrderStatus(payment.orderId, "failed");
+        if (storage2 instanceof DatabaseStorage) {
+          const payment = await storage2.getPaymentByReference(result.reference);
+          if (payment) {
+            await storage2.updatePaymentStatus(payment.id, result.status, req.body);
+            if (result.status === "successful") {
+              await storage2.updateOrderStatus(payment.orderId, "paid");
+            } else if (result.status === "failed") {
+              await storage2.updateOrderStatus(payment.orderId, "failed");
+            }
           }
         }
       }
@@ -1223,6 +1227,18 @@ async function registerRoutes(app) {
 dotenv.config();
 async function main() {
   const app = express2();
+  const corsOptions = {
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:3000",
+      "https://rubikcongames.xyz",
+      "http://rubikcongames.xyz"
+    ],
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
+  };
+  app.use(cors(corsOptions));
   app.use(express2.json({
     verify: (req, res, buf) => {
       if (req.originalUrl.startsWith("/api/webhook")) {
@@ -1301,9 +1317,11 @@ async function main() {
   } else {
     serveStatic(app);
   }
-  const port = process.env.PORT || 5e3;
-  server.listen(port, () => {
-    log(`serving on port ${port}`);
+  const port = parseInt(process.env.PORT || "5000", 10);
+  server.listen(port, "0.0.0.0", () => {
+    log(`\u{1F680} Server running on port ${port}`);
+    log(`\u{1F310} Environment: ${process.env.NODE_ENV || "development"}`);
+    log(`\u{1F517} Frontend URL: ${process.env.FRONTEND_URL || "http://localhost:5173"}`);
   });
 }
 main().catch((err) => {

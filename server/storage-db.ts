@@ -79,7 +79,7 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async addToCart(item: InsertCartItem): Promise<CartItem> {
+  async addToCart(item: any): Promise<CartItem> {
     // Check if item already exists in cart
     const existing = await db
       .select()
@@ -132,7 +132,7 @@ export class DatabaseStorage implements IStorage {
     await db.delete(cartItems).where(eq(cartItems.sessionId, sessionId));
   }
 
-  async createOrder(order: InsertOrder): Promise<Order> {
+  async createOrder(order:any): Promise<Order> {
     const result = await db.insert(orders).values(order).returning();
     return result[0];
   }
@@ -153,7 +153,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(orders.id, id));
   }
 
-  async createPayment(payment: InsertPayment): Promise<Payment> {
+  async createPayment(payment: any): Promise<Payment> {
     const result = await db.insert(payments).values(payment).returning();
     return result[0];
   }
@@ -169,12 +169,12 @@ export class DatabaseStorage implements IStorage {
       .where(eq(payments.id, id));
   }
 
-  async getPaymentByReference(reference: string): Promise<Payment | undefined> {
+ async getPaymentByReference(reference: string): Promise<Payment | undefined> {
     const result = await db.select().from(payments).where(eq(payments.reference, reference));
     return result[0];
   }
 
-  async createCryptoTransaction(transaction: InsertCryptoTransaction): Promise<CryptoTransaction> {
+  async createCryptoTransaction(transaction: any): Promise<CryptoTransaction> {
     const result = await db.insert(cryptoTransactions).values(transaction).returning();
     return result[0];
   }

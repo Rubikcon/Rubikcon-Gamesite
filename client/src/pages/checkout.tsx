@@ -193,9 +193,11 @@ export default function Checkout() {
       const response = await apiRequest('POST', '/api/payment/flutterwave/initialize', {
         orderData
       });
+
+      const res = response as any;
       
       // Redirect to Flutterwave payment page
-      window.location.href = response.paymentUrl;
+      window.location.href = res.paymentUrl;
     } catch {
       toast({
         title: "Payment Error",

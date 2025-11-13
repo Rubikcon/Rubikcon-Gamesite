@@ -79,12 +79,21 @@ export const cryptoTransactions = pgTable("crypto_transactions", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const insertGameSchema = createInsertSchema(games, {
-  images: z.array(z.string()),
-}).omit({
-  id: true,
-  createdAt: true,
-});
+type GameTable = typeof games;
+export const insertGameSchema = createInsertSchema(games)
+  .pick({
+    title: true,
+    slug: true,
+    description: true,
+    price: true,
+    category: true,
+    image: true,
+    isOnline: true,
+  })
+  .extend({
+    images: z.array(z.string().url()).optional(), // add images manually
+  });
+
 
 export const insertCartItemSchema = createInsertSchema(cartItems).omit({
   id: true,
@@ -98,20 +107,18 @@ const orderItemSchema = z.object({
   quantity: z.number(),
 });
 
-export const insertOrderSchema = createInsertSchema(orders, {
-  items: z.array(orderItemSchema),
-}).omit({
-  id: true,
-  createdAt: true,
-});
+export const insertOrderSchema = createInsertSchema(orders)
+  .omit({ id: true, createdAt: true })
+  .extend({
+    items: z.lazy(() => z.array(orderItemSchema)), // <- wrap in lazy
+  });
 
-export const insertPaymentSchema = createInsertSchema(payments, {
-  gatewayResponse: z.any().optional(),
-}).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
+export const insertPaymentSchema = createInsertSchema(payments)
+  .omit({ id: true, createdAt: true, updatedAt: true })
+  .extend({
+    gatewayResponse: z.any().optional(), // override or relax type
+  });
+
 
 export const insertCryptoTransactionSchema = createInsertSchema(cryptoTransactions).omit({
   id: true,

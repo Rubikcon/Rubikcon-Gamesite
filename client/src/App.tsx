@@ -29,7 +29,7 @@ function Router() {
       <Route path="/cart" component={Cart} />
       <Route path="/checkout" component={Checkout} />
       <Route path="/crypto-payment" component={CryptoPayment} />
-      <Route path="/flutterwave-payment" component={FlutterwavePayment} />
+      <Route path="/flutterwave-payment" component={() => <FlutterwavePayment />} />
       <Route path="/payment/callback" component={PaymentCallback} />
       <Route path="/wallet-test" component={WalletTest} />
       <Route component={NotFound} />

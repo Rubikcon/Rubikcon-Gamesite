@@ -30,12 +30,13 @@ export default function FlutterwavePayment({ orderData }: FlutterwavePaymentProp
         orderData
       });
 
-      setPaymentUrl(response.paymentUrl);
-      setOrderId(response.orderId);
+      const res   =  response as any
+      setPaymentUrl(res.paymentUrl);
+      setOrderId(res.orderId);
       setPaymentStatus('pending');
 
       // Redirect to Flutterwave payment page
-      window.location.href = response.paymentUrl;
+      window.location.href = res.paymentUrl;
     } catch (error) {
       console.error('Payment initialization failed:', error);
       setPaymentStatus('failed');
