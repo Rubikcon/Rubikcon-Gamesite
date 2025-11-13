@@ -11,6 +11,7 @@
     "jsx": "react-jsx",
     "strict": false,
     "noUnusedLocals": false,
+    
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": false,
     "skipLibCheck": true,
@@ -23,7 +24,6 @@
     }
   },
   "include": [
-
     "server",
     "shared",
     "types.d.ts",

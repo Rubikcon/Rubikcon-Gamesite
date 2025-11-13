@@ -248,7 +248,7 @@ The game continues until all cards are used, and the highest scorer wins.`
 });
 
 // server/index.ts
-import dotenv from "dotenv";
+import dotenv2 from "dotenv";
 import express2 from "express";
 import cors from "cors";
 import session from "express-session";
@@ -386,6 +386,12 @@ var insertCryptoTransactionSchema = createInsertSchema(cryptoTransactions).omit(
 });
 
 // server/database.ts
+import path from "path";
+import dotenv from "dotenv";
+dotenv.config({
+  path: path.resolve(process.cwd(), ".env")
+  // or "../.env.local" depending on your structure
+});
 if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL is required");
 }
@@ -717,7 +723,7 @@ import crypto2 from "crypto";
 // server/vite.ts
 import express from "express";
 import fs from "fs";
-import path from "path";
+import path2 from "path";
 import { fileURLToPath as fileURLToPath2 } from "url";
 import { createServer as createViteServer, createLogger } from "vite";
 
@@ -772,7 +778,7 @@ var vite_config_default = defineConfig({
 // server/vite.ts
 import { nanoid } from "nanoid";
 var __filename = fileURLToPath2(import.meta.url);
-var __dirname = path.dirname(__filename);
+var __dirname = path2.dirname(__filename);
 var viteLogger = createLogger();
 function log(message, source = "express") {
   const formattedTime = (/* @__PURE__ */ new Date()).toLocaleTimeString("en-US", {
@@ -806,7 +812,7 @@ async function setupVite(app, server) {
   app.use("*", async (req, res, next) => {
     const url = req.originalUrl;
     try {
-      const clientTemplate = path.resolve(
+      const clientTemplate = path2.resolve(
         __dirname,
         "..",
         "client",
@@ -826,7 +832,7 @@ async function setupVite(app, server) {
   });
 }
 function serveStatic(app) {
-  const distPath = path.resolve(__dirname, "..", "dist", "public");
+  const distPath = path2.resolve(__dirname, "..", "dist", "public");
   if (!fs.existsSync(distPath)) {
     throw new Error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`
@@ -834,7 +840,7 @@ function serveStatic(app) {
   }
   app.use(express.static(distPath));
   app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
+    res.sendFile(path2.resolve(distPath, "index.html"));
   });
 }
 
@@ -842,7 +848,9 @@ function serveStatic(app) {
 var WEBHOOK_SECRET = process.env.QUICKNODE_WEBHOOK_SECRET || "";
 function verifyWebhookSignature(req) {
   if (!WEBHOOK_SECRET) {
-    log("Webhook secret not set. Skipping signature verification for development.");
+    log(
+      "Webhook secret not set. Skipping signature verification for development."
+    );
     return true;
   }
   const signature = req.headers["x-qn-signature"];
@@ -857,7 +865,10 @@ function verifyWebhookSignature(req) {
   const hmac = crypto2.createHmac("sha256", WEBHOOK_SECRET);
   const computedSignature = hmac.update(req.rawBody).digest("hex");
   try {
-    return crypto2.timingSafeEqual(Buffer.from(signature), Buffer.from(computedSignature));
+    return crypto2.timingSafeEqual(
+      Buffer.from(signature),
+      Buffer.from(computedSignature)
+    );
   } catch (error) {
     log(`Error during timingSafeEqual: ${error}`);
     return false;
@@ -873,7 +884,9 @@ function handleTransactionWebhook(req, res) {
   if (payload.event?.name && payload.txs && payload.txs.length > 0) {
     payload.txs.forEach((tx) => {
       if (tx.status === "confirmed") {
-        log(`Transaction ${tx.hash} confirmed with ${tx.confirmations} confirmations`);
+        log(
+          `Transaction ${tx.hash} confirmed with ${tx.confirmations} confirmations`
+        );
       }
     });
     res.status(200).json({ message: "Webhook processed successfully" });
@@ -1224,7 +1237,7 @@ async function registerRoutes(app) {
 }
 
 // server/index.ts
-dotenv.config();
+dotenv2.config({ path: "../.env.local" });
 async function main() {
   const app = express2();
   const corsOptions = {
@@ -1283,7 +1296,7 @@ async function main() {
   app.use(session(sessionConfig));
   app.use((req, res, next) => {
     const start = Date.now();
-    const path2 = req.path;
+    const path3 = req.path;
     let capturedJsonResponse = void 0;
     const originalResJson = res.json;
     res.json = function(bodyJson, ...args) {
@@ -1292,8 +1305,8 @@ async function main() {
     };
     res.on("finish", () => {
       const duration = Date.now() - start;
-      if (path2.startsWith("/api")) {
-        let logLine = `${req.method} ${path2} ${res.statusCode} in ${duration}ms`;
+      if (path3.startsWith("/api")) {
+        let logLine = `${req.method} ${path3} ${res.statusCode} in ${duration}ms`;
         if (capturedJsonResponse) {
           logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
         }

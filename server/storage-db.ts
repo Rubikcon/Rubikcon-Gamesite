@@ -1,5 +1,5 @@
 import { eq, and } from "drizzle-orm";
-import { db } from "./database";
+import { db } from "./database.ts";
 import { 
   games, 
   cartItems, 
@@ -15,7 +15,7 @@ import {
   type InsertOrder,
   type InsertPayment,
   type InsertCryptoTransaction
-} from "@shared/schema";
+} from "../shared/schema.ts";
 
 export interface IStorage {
   // Games
