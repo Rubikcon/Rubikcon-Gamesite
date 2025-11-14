@@ -1,6 +1,13 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import * as schema from "@shared/schema";
+import * as schema from "../shared/schema.ts";
+import path from "path";
+import dotenv from "dotenv";
+
+// load env variables relative to the current file
+dotenv.config({
+  path: path.resolve(process.cwd(), ".env"), // or "../.env.local" depending on your structure
+});
 
 if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL is required");

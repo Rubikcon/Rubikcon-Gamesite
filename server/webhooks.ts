@@ -1,9 +1,9 @@
-import { Request, Response } from 'express';
-import crypto from 'crypto';
-import { log } from './vite';
+import express, { type Request, type Response,  } from "express";
+import crypto from "crypto";
+import { log } from "./vite.ts";
 
 // Secret for verifying webhook signatures
-const WEBHOOK_SECRET = process.env.QUICKNODE_WEBHOOK_SECRET || '';
+const WEBHOOK_SECRET = process.env.QUICKNODE_WEBHOOK_SECRET || "";
 
 // A more accurate representation of the QuickNode webhook payload
 interface QuickNodeWebhookPayload {
@@ -26,27 +26,32 @@ interface QuickNodeWebhookPayload {
  */
 function verifyWebhookSignature(req: Request): boolean {
   if (!WEBHOOK_SECRET) {
-    log('Webhook secret not set. Skipping signature verification for development.');
+    log(
+      "Webhook secret not set. Skipping signature verification for development."
+    );
     // In a production environment, you should throw an error or return false here.
-    return true; 
+    return true;
   }
 
-  const signature = req.headers['x-qn-signature'] as string;
+  const signature = req.headers["x-qn-signature"] as string;
   if (!signature) {
-    log('Webhook signature missing from request headers.');
+    log("Webhook signature missing from request headers.");
     return false;
   }
 
   if (!req.rawBody) {
-    log('Raw request body not available for signature verification.');
+    log("Raw request body not available for signature verification.");
     return false;
   }
 
-  const hmac = crypto.createHmac('sha256', WEBHOOK_SECRET);
-  const computedSignature = hmac.update(req.rawBody).digest('hex');
+  const hmac = crypto.createHmac("sha256", WEBHOOK_SECRET);
+  const computedSignature = hmac.update(req.rawBody).digest("hex");
 
   try {
-    return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(computedSignature));
+    return crypto.timingSafeEqual(
+      Buffer.from(signature),
+      Buffer.from(computedSignature)
+    );
   } catch (error) {
     log(`Error during timingSafeEqual: ${error}`);
     return false;
@@ -59,7 +64,7 @@ function verifyWebhookSignature(req: Request): boolean {
 export function handleTransactionWebhook(req: Request, res: Response): void {
   // Verify the webhook signature
   if (!verifyWebhookSignature(req)) {
-    res.status(401).json({ message: 'Invalid webhook signature' });
+    res.status(401).json({ message: "Invalid webhook signature" });
     return;
   }
 
@@ -69,9 +74,11 @@ export function handleTransactionWebhook(req: Request, res: Response): void {
   // Check for the specific QuickNode event name, e.g., 'qn_transactionConfirmed'
   // and process each transaction in the payload
   if (payload.event?.name && payload.txs && payload.txs.length > 0) {
-    payload.txs.forEach(tx => {
-      if (tx.status === 'confirmed') {
-        log(`Transaction ${tx.hash} confirmed with ${tx.confirmations} confirmations`);
+    payload.txs.forEach((tx) => {
+      if (tx.status === "confirmed") {
+        log(
+          `Transaction ${tx.hash} confirmed with ${tx.confirmations} confirmations`
+        );
 
         // TODO: Implement your business logic here
         // For example, update a database record for this transaction
@@ -81,10 +88,10 @@ export function handleTransactionWebhook(req: Request, res: Response): void {
       }
     });
 
-    res.status(200).json({ message: 'Webhook processed successfully' });
+    res.status(200).json({ message: "Webhook processed successfully" });
   } else {
     log(`Unhandled or empty webhook payload: ${JSON.stringify(payload)}`);
-    res.status(200).json({ message: 'Payload not handled' });
+    res.status(200).json({ message: "Payload not handled" });
   }
 }
 
@@ -95,7 +102,7 @@ export function monitorTransaction(req: Request, res: Response): void {
   const { txHash } = req.body;
 
   if (!txHash) {
-    res.status(400).json({ message: 'Transaction hash is required' });
+    res.status(400).json({ message: "Transaction hash is required" });
     return;
   }
 

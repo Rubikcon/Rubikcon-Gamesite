@@ -19,16 +19,21 @@ interface Game extends BaseGame {
 }
 
 export default function GameDetail() {
-  const [, params] = useRoute("/games/:slug");
+  const [, params] = useRoute<{ slug: string }>("/games/:slug");
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [quantity, setQuantity] = useState(1);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+const slug = params?.slug ?? "";
 
-  const { data: game, isLoading, error } = useQuery<Game>({
-    queryKey: [`/api/games/${params?.slug}`],
-    enabled: !!params?.slug,
-  });
+const {
+  data: game,
+  isLoading,
+  error,
+} = useQuery<Game>({
+  queryKey: [`/api/games/${slug}`],
+  enabled: Boolean(slug),
+});
 
   const { data: allGames } = useQuery<Game[]>({
     queryKey: ["/api/games"],

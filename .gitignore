@@ -1,3 +1,10 @@
+# Node modules
 /node_modules
+client/node_modules
+
+# Build output
 /dist
+/build
+
+# Vercel deployment folder
 .vercel

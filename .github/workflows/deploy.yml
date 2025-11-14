@@ -57,8 +57,10 @@ jobs:
             cd ../client
             npm install
 
-            # Fix permissions for Vite & esbuild
-            chmod +x ../node_modules/.bin/vite ../node_modules/vite/node_modules/.bin/esbuild || true
+            # Fix permissions for Vite & esbuild binaries
+            echo "Fixing esbuild & Vite permissions..."
+            chmod +x node_modules/.bin/vite || true
+            chmod +x node_modules/esbuild/bin/esbuild || true
 
             echo "Building frontend..."
             if npm run build; then
@@ -76,4 +78,3 @@ jobs:
               echo "Warning: dist folder does not exist. Skipping rsync."
             fi
           EOF
-

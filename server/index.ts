@@ -1,13 +1,13 @@
 import dotenv from "dotenv";
-dotenv.config();
+dotenv.config({ path: "../.env.local" });
 
-import express, { type Request, Response, NextFunction } from "express";
+import express, { type Request,type Response, type NextFunction } from "express";
 import cors from "cors";
 import session from "express-session";
 import { createClient } from "redis";
 import { RedisStore } from "connect-redis";
-import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+import { registerRoutes } from "./routes.ts";
+import { setupVite, serveStatic, log } from "./vite.ts";
 
 // Augment the Express Request type to include our custom rawBody property
 declare global {
